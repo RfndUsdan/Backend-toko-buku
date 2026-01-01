@@ -80,4 +80,25 @@ class OrderController extends Controller
             'data' => $orders
         ]);
     }
+    public function cancelOrder($id)
+    {
+        $user = auth()->user();
+        $order = Order::where('id', $id)->where('user_id', $user->id)->first();
+
+        if (!$order) {
+            return response()->json(['message' => 'Pesanan tidak ditemukan'], 404);
+        }
+
+        if ($order->status !== 'pending') {
+            return response()->json(['message' => 'Pesanan yang sudah diproses tidak dapat dibatalkan'], 400);
+        }
+
+        // Ubah status menjadi 'cancelled' atau hapus (sesuai kebutuhan bisnismu)
+        $order->update(['status' => 'cancelled']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pesanan berhasil dibatalkan'
+        ]);
+    }
 }

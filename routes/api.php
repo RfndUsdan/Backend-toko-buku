@@ -41,6 +41,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Checkout & Pesanan
     Route::post('/checkout', [OrderController::class, 'checkout']);
     Route::get('/my-orders', [OrderController::class, 'userOrders']); // Pesanan milik user tersebut
+    Route::delete('/orders/{id}/cancel', [OrderController::class, 'cancelOrder']);
 
 
     // --- 3. RUTE KHUSUS ADMIN (Login + Role Admin) ---
