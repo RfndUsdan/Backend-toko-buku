@@ -16,13 +16,15 @@ use App\Http\Controllers\Api\DashboardController;
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
 
-Route::get('/books', [BookController::class, 'index']);
-Route::get('/books/{id}', [BookController::class, 'show']);
+
 
 
 // --- 2. RUTE TERPROTEKSI (Harus Login / Sanctum) ---
 Route::middleware('auth:sanctum')->group(function () {
+     
 
+    Route::get('/books', [BookController::class, 'index']);
+    Route::get('/books/{id}', [BookController::class, 'show']);
     // Autentikasi & Profil
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
