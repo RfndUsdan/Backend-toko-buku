@@ -12,17 +12,21 @@ class BookController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Book::query();
+        // Gunakan eager loading 'category' agar performa cepat
+        $query = Book::with('category'); 
 
         if ($request->has('search')) {
             $query->where(function ($q) use ($request) {
                 $q->where('title', 'like', '%' . $request->search . '%')
-                    ->orWhere('author', 'like', '%' . $request->search . '%');
+                ->orWhere('author', 'like', '%' . $request->search . '%');
             });
         }
 
         if ($request->filled('category')) {
-            $query->where('category', $request->category);
+            // Mencari berdasarkan nama kategori di tabel relasi
+            $query->whereHas('category', function($q) use ($request) {
+                $q->where('name', $request->category);
+            });
         }
 
         $books = $query->latest()->paginate(12);
@@ -30,6 +34,17 @@ class BookController extends Controller
         return response()->json([
             'message' => 'Daftar buku berhasil diambil',
             'data' => $books
+        ], 200);
+    }
+
+    public function categories()
+    {
+        // Mengambil data langsung dari tabel categories, bukan distinct string dari tabel books
+        $categories = \App\Models\Category::select('id', 'name')->get();
+
+        return response()->json([
+            'message' => 'Daftar kategori berhasil diambil',
+            'data' => $categories
         ], 200);
     }
 
@@ -81,20 +96,6 @@ class BookController extends Controller
             'message' => 'Detail buku berhasil diambil',
             'data' => $book
         ]);
-    }
-
-    public function categories()
-    {
-        // Mengambil nama kategori unik dari tabel books yang tidak bernilai null
-        $categories = Book::select('category')
-            ->distinct()
-            ->whereNotNull('category')
-            ->get();
-
-        return response()->json([
-            'message' => 'Daftar kategori berhasil diambil',
-            'data' => $categories
-        ], 200);
     }
 
     public function update(Request $request, $id)
