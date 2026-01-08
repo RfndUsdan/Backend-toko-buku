@@ -10,13 +10,14 @@ use Illuminate\Support\Facades\DB;
 
 class BookController extends Controller
 {
-    public function index(Request $request) {
+    public function index(Request $request)
+    {
         $query = Book::query();
 
         if ($request->has('search')) {
-            $query->where(function($q) use ($request) {
+            $query->where(function ($q) use ($request) {
                 $q->where('title', 'like', '%' . $request->search . '%')
-                  ->orWhere('author', 'like', '%' . $request->search . '%');
+                    ->orWhere('author', 'like', '%' . $request->search . '%');
             });
         }
 
@@ -33,47 +34,48 @@ class BookController extends Controller
     }
 
     public function store(Request $request)
-{
-    // 1. Validasi semua field (termasuk yang baru)
-    $request->validate([
-        'title'          => 'required|string|max:255',
-        'author'         => 'required|string|max:255',
-        'publisher'      => 'required|string|max:255',      // Baru
-        'published_year' => 'required|integer',             // Baru
-        'language'       => 'required|string',               // Baru
-        'pages'          => 'required|integer',             // Baru
-        'price'          => 'required|integer',
-        'category'       => 'required|string',
-        'description'    => 'required|string',
-        'image'          => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-    ]);
+    {
+        // 1. Validasi semua field (termasuk yang baru)
+        $request->validate([
+            'title'          => 'required|string|max:255',
+            'author'         => 'required|string|max:255',
+            'publisher'      => 'required|string|max:255',      // Baru
+            'published_year' => 'required|integer',             // Baru
+            'language'       => 'required|string',               // Baru
+            'pages'          => 'required|integer',             // Baru
+            'price'          => 'required|integer',
+            'category'       => 'required|string',
+            'description'    => 'required|string',
+            'image'          => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
 
-    // 2. Proses Upload Gambar
-    $imagePath = null;
-    if ($request->hasFile('image')) {
-        $imagePath = $request->file('image')->store('books', 'public');
+        // 2. Proses Upload Gambar
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('books', 'public');
+        }
+
+        // 3. Simpan ke Database
+        $book = \App\Models\Book::create([
+            'title'          => $request->title,
+            'author'         => $request->author,
+            'publisher'      => $request->publisher,      // Tambahkan ini
+            'published_year' => $request->published_year, // Tambahkan ini
+            'language'       => $request->language,       // Tambahkan ini
+            'pages'          => $request->pages,          // Tambahkan ini
+            'price'          => $request->price,
+            'category'       => $request->category,
+            'description'    => $request->description,
+            'image'          => $imagePath,
+        ]);
+
+        return response()->json([
+            'message' => 'Buku berhasil ditambahkan!',
+            'data'    => $book
+        ], 201);
     }
-
-    // 3. Simpan ke Database
-    $book = \App\Models\Book::create([
-        'title'          => $request->title,
-        'author'         => $request->author,
-        'publisher'      => $request->publisher,      // Tambahkan ini
-        'published_year' => $request->published_year, // Tambahkan ini
-        'language'       => $request->language,       // Tambahkan ini
-        'pages'          => $request->pages,          // Tambahkan ini
-        'price'          => $request->price,
-        'category'       => $request->category,
-        'description'    => $request->description,
-        'image'          => $imagePath,
-    ]);
-
-    return response()->json([
-        'message' => 'Buku berhasil ditambahkan!',
-        'data'    => $book
-    ], 201);
-}
-    public function show($id) {
+    public function show($id)
+    {
         $book = Book::findOrFail($id);
         return response()->json([
             'message' => 'Detail buku berhasil diambil',
@@ -81,7 +83,22 @@ class BookController extends Controller
         ]);
     }
 
-    public function update(Request $request, $id) {
+    public function categories()
+    {
+        // Mengambil nama kategori unik dari tabel books yang tidak bernilai null
+        $categories = Book::select('category')
+            ->distinct()
+            ->whereNotNull('category')
+            ->get();
+
+        return response()->json([
+            'message' => 'Daftar kategori berhasil diambil',
+            'data' => $categories
+        ], 200);
+    }
+
+    public function update(Request $request, $id)
+    {
         $book = Book::findOrFail($id);
 
         $validated = $request->validate([
@@ -115,15 +132,14 @@ class BookController extends Controller
     {
         try {
             $book = Book::findOrFail($id);
-            
+
             // Laravel otomatis hanya mengisi deleted_at, tidak menghapus baris data
             // File gambar tetap aman di folder storage
-            $book->delete(); 
+            $book->delete();
 
             return response()->json([
                 'message' => 'Buku berhasil dipindahkan ke tempat sampah (Soft Delete)'
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Gagal menghapus buku',

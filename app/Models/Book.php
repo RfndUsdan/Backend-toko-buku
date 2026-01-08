@@ -10,15 +10,11 @@ class Book extends Model
     use SoftDeletes; // 2. Gunakan ini
 
     protected $fillable = [
-    'title', 
-    'author', 
-    'publisher', 
-    'published_year', 
-    'language', 
-    'pages', 
-    'price', 
-    'description', 
-    'image', 
-    'category'
-];
+    'title', 'author', 'publisher', 'published_year', 
+    'language', 'pages', 'price', 'category', 'description', 'image'
+    ];
+
+    public function category() {
+    return $this->belongsTo(Category::class);
+}
 }

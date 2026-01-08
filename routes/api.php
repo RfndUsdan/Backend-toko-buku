@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\DashboardController;
 // --- 1. RUTE PUBLIK (Bisa diakses tanpa login) ---
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
+Route::get('/categories', [BookController::class, 'categories']);
 Route::get('/books', [BookController::class, 'index']);
 Route::get('/books/{id}', [BookController::class, 'show']);
 
