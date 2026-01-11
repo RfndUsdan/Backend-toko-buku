@@ -23,9 +23,11 @@ class BookController extends Controller
         }
 
         if ($request->filled('category')) {
-            // Mencari berdasarkan nama kategori di tabel relasi
             $query->whereHas('category', function($q) use ($request) {
-                $q->where('name', $request->category);
+                // Jika yang dikirim dari frontend adalah slug (misal: 'fiksi-remaja')
+                $q->where('slug', $request->category); 
+                // ATAU jika yang dikirim adalah nama (misal: 'Fiksi')
+                // $q->where('name', $request->category);
             });
         }
 
@@ -50,48 +52,44 @@ class BookController extends Controller
 
     public function store(Request $request)
     {
-        // 1. Validasi semua field (termasuk yang baru)
         $request->validate([
             'title'          => 'required|string|max:255',
             'author'         => 'required|string|max:255',
-            'publisher'      => 'required|string|max:255',      // Baru
-            'published_year' => 'required|integer',             // Baru
-            'language'       => 'required|string',               // Baru
-            'pages'          => 'required|integer',             // Baru
+            'publisher'      => 'required|string|max:255',
+            'published_year' => 'required|integer',
+            'language'       => 'required|string',
+            'pages'          => 'required|integer',
             'price'          => 'required|integer',
-            'category'       => 'required|string',
+            'category_id'    => 'required|exists:categories,id', // Ubah ke category_id dan pastikan ID-nya ada di tabel categories
             'description'    => 'required|string',
             'image'          => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
-        // 2. Proses Upload Gambar
         $imagePath = null;
         if ($request->hasFile('image')) {
             $imagePath = $request->file('image')->store('books', 'public');
         }
 
-        // 3. Simpan ke Database
-        $book = \App\Models\Book::create([
+        $book = Book::create([
             'title'          => $request->title,
             'author'         => $request->author,
-            'publisher'      => $request->publisher,      // Tambahkan ini
-            'published_year' => $request->published_year, // Tambahkan ini
-            'language'       => $request->language,       // Tambahkan ini
-            'pages'          => $request->pages,          // Tambahkan ini
+            'publisher'      => $request->publisher,
+            'published_year' => $request->published_year,
+            'language'       => $request->language,
+            'pages'          => $request->pages,
             'price'          => $request->price,
-            'category'       => $request->category,
+            'category_id'    => $request->category_id, // Gunakan category_id
             'description'    => $request->description,
             'image'          => $imagePath,
         ]);
 
-        return response()->json([
-            'message' => 'Buku berhasil ditambahkan!',
-            'data'    => $book
-        ], 201);
+        return response()->json(['message' => 'Buku berhasil ditambahkan!', 'data' => $book], 201);
     }
+    
     public function show($id)
     {
-        $book = Book::findOrFail($id);
+        $book = Book::with('category')->findOrFail($id);
+
         return response()->json([
             'message' => 'Detail buku berhasil diambil',
             'data' => $book
@@ -103,29 +101,27 @@ class BookController extends Controller
         $book = Book::findOrFail($id);
 
         $validated = $request->validate([
-            'title' => 'sometimes|required',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-            'author' => 'sometimes|required',
-            'category' => 'sometimes|required',
-            'price' => 'sometimes|required|numeric',
+            'title'       => 'sometimes|required',
+            'image'       => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'author'      => 'sometimes|required',
+            'category_id' => 'sometimes|required|exists:categories,id', // GANTI INI
+            'price'       => 'sometimes|required|numeric',
             'description' => 'sometimes|required',
         ]);
 
         if ($request->hasFile('image')) {
-            // Hapus gambar lama jika ada
             if ($book->image) {
                 Storage::disk('public')->delete($book->image);
             }
-            // Simpan gambar baru
             $path = $request->file('image')->store('books', 'public');
             $validated['image'] = $path;
         }
 
-        $book->update($validated);
+        $book->update($validated); // Sekarang $validated berisi 'category_id', jadi aman.
 
         return response()->json([
             'message' => 'Buku berhasil diperbarui',
-            'data' => $book
+            'data' => $book->load('category') // Tambahkan load agar response-nya lengkap
         ]);
     }
 
