@@ -12,9 +12,10 @@ class BookController extends Controller
 {
     public function index(Request $request)
     {
-        // Gunakan eager loading 'category' agar performa cepat
+        // 1. Inisialisasi query dengan eager loading
         $query = Book::with('category'); 
 
+        // 2. Logika Search
         if ($request->has('search')) {
             $query->where(function ($q) use ($request) {
                 $q->where('title', 'like', '%' . $request->search . '%')
@@ -22,17 +23,17 @@ class BookController extends Controller
             });
         }
 
+        // 3. Logika Filter Kategori
         if ($request->filled('category')) {
             $query->whereHas('category', function($q) use ($request) {
-                // Jika yang dikirim dari frontend adalah slug (misal: 'fiksi-remaja')
                 $q->where('slug', $request->category); 
-                // ATAU jika yang dikirim adalah nama (misal: 'Fiksi')
-                // $q->where('name', $request->category);
             });
         }
 
+        // 4. Eksekusi query dengan pagination
         $books = $query->latest()->paginate(12);
 
+        // 5. Kembalikan response JSON
         return response()->json([
             'message' => 'Daftar buku berhasil diambil',
             'data' => $books
